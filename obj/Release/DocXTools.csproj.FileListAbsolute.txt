@@ -1,0 +1,7 @@
+E:\!Projects\My Src\!Git\DocXTools\bin\Release\DocXTools.dll
+E:\!Projects\My Src\!Git\DocXTools\bin\Release\DocXTools.pdb
+E:\!Projects\My Src\!Git\DocXTools\bin\Release\DocumentFormat.OpenXml.dll
+E:\!Projects\My Src\!Git\DocXTools\obj\Release\ResolveAssemblyReference.cache
+E:\!Projects\My Src\!Git\DocXTools\obj\Release\DocXTools.dll
+E:\!Projects\My Src\!Git\DocXTools\obj\Release\DocXTools.pdb
+E:\!Projects\My Src\!Git\DocXTools\bin\Release\DocXTools.XML
