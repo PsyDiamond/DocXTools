@@ -101,7 +101,9 @@ namespace LexTalionis.DocXTools
                 });
             }
         }
-
+        /// <summary>
+        /// Завершить работу с закладками
+        /// </summary>
         public void Dispose()
         {
             if (_bookmarks.Count > 0)

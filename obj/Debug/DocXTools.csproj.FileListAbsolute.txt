@@ -1,6 +1,0 @@
-E:\TornadoProjects\Тестирование\DocXTools\obj\Debug\ResolveAssemblyReference.cache
-E:\TornadoProjects\Тестирование\DocXTools\bin\Debug\DocXTools.dll
-E:\TornadoProjects\Тестирование\DocXTools\bin\Debug\DocXTools.pdb
-E:\TornadoProjects\Тестирование\DocXTools\bin\Debug\DocumentFormat.OpenXml.dll
-E:\TornadoProjects\Тестирование\DocXTools\obj\Debug\DocXTools.dll
-E:\TornadoProjects\Тестирование\DocXTools\obj\Debug\DocXTools.pdb
