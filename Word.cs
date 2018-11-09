@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Remoting;
+using System.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
-using Table = LexTalionis.DocXTools.Table;
 
 namespace LexTalionis.DocXTools
 {
@@ -149,23 +150,30 @@ namespace LexTalionis.DocXTools
 
         private static void FillBookmarks(OpenXmlElement root, Dictionary<string, string> bookmarks)
         {
+            var sb = new StringBuilder();
             foreach (var itemBookmark in bookmarks)
             {
                 var start = root.Descendants<BookmarkStart>().FirstOrDefault(x => x.Name == itemBookmark.Key);
                 if (start == null)
                     continue;
                 var elem = start.NextSibling();
-                var run = (Run)elem;
+                var run = elem as Run;
                 while (elem != null && !(elem is BookmarkEnd))
                 {
                     var nextElem = elem.NextSibling();
                     elem.Remove();
                     elem = nextElem;
                 }
+                if (run != null)
+                    run.GetFirstChild<Text>().Text = itemBookmark.Value;
+                else
+                    sb.AppendLine(itemBookmark.Key);
 
-                run.GetFirstChild<Text>().Text = itemBookmark.Value;
                 start.Parent.InsertAfter(run, start);
             }
+
+            if (sb.Length > 0)
+                throw new ServerException("Не верный дизайн документа, слеудет обратить внимание на закладки: " + sb);
         }
 
         /// <summary>
