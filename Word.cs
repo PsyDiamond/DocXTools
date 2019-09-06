@@ -15,8 +15,17 @@ namespace LexTalionis.DocXTools
     /// </summary>
     public class Word : IDisposable
     {
+        /// <summary>
+        /// Документ
+        /// </summary>
         private static WordprocessingDocument _doc;
+        /// <summary>
+        /// Закладки
+        /// </summary>
         private readonly Dictionary<string, string> _bookmarks = new Dictionary<string, string>();
+        /// <summary>
+        /// Таблицы
+        /// </summary>
         readonly List<Table> _tables = new List<Table>();
        
         /// <summary>
@@ -50,7 +59,11 @@ namespace LexTalionis.DocXTools
         /// <param name="value">значение</param>
         public void SetStatic(string key, string value)
         {
-            _bookmarks.Add(key, value);
+            /* Защита от ошибок, если где то в строке используется null, то это вызывает проблемы */
+            var val = value;
+            if (val != null)
+                val = val.Replace((char)0, ' ');
+            _bookmarks.Add(key, val);
         }
 
         /// <summary>
@@ -61,7 +74,7 @@ namespace LexTalionis.DocXTools
         {
             foreach (var item in bookmarks)
             {
-                _bookmarks.Add(item.Key, item.Value);
+                SetStatic(item.Key, item.Value);
             }
         }
 
