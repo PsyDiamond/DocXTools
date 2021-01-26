@@ -30,6 +30,8 @@ namespace LexTalionis.DocXTools
         /// Таблицы
         /// </summary>
         readonly List<Table> _tables = new List<Table>();
+
+        private readonly List<string> _deleteFields = new List<string>(); 
        
         /// <summary>
         /// Открыть шаблон
@@ -82,6 +84,24 @@ namespace LexTalionis.DocXTools
         }
 
         /// <summary>
+        /// Удалить колекцию закладок
+        /// </summary>
+        /// <param name="list">закладки</param>
+        public void DeleteStatic(IEnumerable<string> list)
+        {
+            _deleteFields.AddRange(list);
+        }
+
+        /// <summary>
+        /// Удалить закладку
+        /// </summary>
+        /// <param name="item">имя закоадки</param>
+        public void DeleteStatic(string item)
+        {
+            _deleteFields.Add(item);
+        }
+
+        /// <summary>
         /// Добавить строку закладок в таблицу
         /// </summary>
         /// <param name="row">строка закладок</param>
@@ -125,12 +145,26 @@ namespace LexTalionis.DocXTools
         {
             if (_bookmarks.Count > 0)
                 FillBookmarks(_doc.MainDocumentPart.RootElement, _bookmarks);
+            if (_deleteFields.Any())
+                DeleteFields(_doc.MainDocumentPart.RootElement, _deleteFields);
 
                 foreach (var table in _tables)
                 {
                     FillTables(table.Rows);
                 }
             _doc.Dispose();
+        }
+
+        private void DeleteFields(OpenXmlElement root, IEnumerable<string> deleteFields)
+        {
+            foreach (var item in deleteFields)
+            {
+                var bookmark = root.Descendants<BookmarkStart>().FirstOrDefault(x => x.Name == item);
+                if (bookmark == null)
+                    continue;
+                var paragraph = bookmark.Parent;
+                paragraph.Remove();
+            }
         }
 
         private static void FillTables(List<Dictionary<string, string>> list)
