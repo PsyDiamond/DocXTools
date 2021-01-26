@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.Remoting;
@@ -7,6 +8,8 @@ using System.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
+using OpenXmlPowerTools;
+using TableRow = DocumentFormat.OpenXml.Wordprocessing.TableRow;
 
 namespace LexTalionis.DocXTools
 {
@@ -209,6 +212,32 @@ namespace LexTalionis.DocXTools
             var row = GetRow(key);
             var table = row.Parent;
             table.Remove();
+        }
+
+        /// <summary>
+        /// Объеденить отчеты в один
+        /// </summary>
+        /// <param name="reports">готовые отчеты для объединения</param>
+        /// <returns>готовый отчет</returns>
+        public static Stream MergeReports(IEnumerable<Stream> reports)
+        {
+            var source = new List<Source>();
+            var i = 0;
+            foreach (var item in reports)
+            {
+                ++i;
+                using (item)
+                {
+                    var buffer = new byte[item.Length];
+                    item.Read(buffer, 0, (int)item.Length);
+                    source.Add(new Source(new WmlDocument(i.ToString(CultureInfo.InvariantCulture), buffer)));
+                }
+            }
+            var tmp = Path.GetTempFileName();
+            var mergedDoc = DocumentBuilder.BuildDocument(source);
+            mergedDoc.SaveAs(tmp);
+
+            return File.OpenRead(tmp);
         }
     }
 }
