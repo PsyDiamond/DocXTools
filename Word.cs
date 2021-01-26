@@ -21,22 +21,27 @@ namespace LexTalionis.DocXTools
         /// <summary>
         /// Документ
         /// </summary>
-        private static WordprocessingDocument _doc;
+        static WordprocessingDocument _doc;
+        /// <summary>
+        /// Корень документа
+        /// </summary>
+        static OpenXmlElement _root;
         /// <summary>
         /// Закладки
         /// </summary>
-        private readonly Dictionary<string, string> _bookmarks = new Dictionary<string, string>();
+        readonly Dictionary<string, string> _bookmarks = new Dictionary<string, string>();
         /// <summary>
         /// Таблицы
         /// </summary>
         readonly List<Table> _tables = new List<Table>();
-
-        private readonly List<string> _deleteFields = new List<string>();
-
+        /// <summary>
+        /// Список закладко для удаления
+        /// </summary>
+        readonly List<string> _deleteFields = new List<string>();      
         /// <summary>
         /// Число удаляемых параграфов
         /// </summary>
-        private int _pargraphsToDelete;
+        int _pargraphsToDelete;
        
         /// <summary>
         /// Открыть шаблон
@@ -46,8 +51,9 @@ namespace LexTalionis.DocXTools
         public static Word Open(Stream stream)
         {
             _doc = WordprocessingDocument.Open(stream, true);
-            var word = new Word();
-            return word;
+            _root = _doc.MainDocumentPart.RootElement;
+           
+            return new Word();;
         }
 
         /// <summary>
@@ -57,9 +63,7 @@ namespace LexTalionis.DocXTools
         /// <returns>шаблон</returns>
         public static Word Open(string filename)
         {
-            _doc = WordprocessingDocument.Open(filename, true);
-            var word = new Word();
-            return word;
+            return Open(File.Open(filename, FileMode.Open, FileAccess.ReadWrite));
         }
 
         /// <summary>
@@ -71,8 +75,10 @@ namespace LexTalionis.DocXTools
         {
             /* Защита от ошибок, если где то в строке используется null, то это вызывает проблемы */
             var val = value;
+
             if (val != null)
                 val = val.Replace((char)0, ' ');
+
             _bookmarks.Add(key, val);
         }
 
@@ -132,6 +138,7 @@ namespace LexTalionis.DocXTools
         public void AddTableRow(Dictionary<string, string> row, byte id)
         {
             var ltable = _tables.FirstOrDefault(x => x.Order == id);
+
             if (ltable != null)
                 ltable.Rows.Add(row);
             else
@@ -150,16 +157,15 @@ namespace LexTalionis.DocXTools
         public void AddTableRow(List<Dictionary<string, string>> table, byte id)
         {
             var ltable = _tables.FirstOrDefault(x => x.Order == id);
+
             if (ltable != null)
-                    ltable.Rows.AddRange(table);
+                ltable.Rows.AddRange(table);
             else
-            {
                 _tables.Add(new Table
                 {
                     Order = id,
                     Rows = table
                 });
-            }
         }
         /// <summary>
         /// Завершить работу с закладками
@@ -167,89 +173,112 @@ namespace LexTalionis.DocXTools
         public void Dispose()
         {
             if (_bookmarks.Count > 0)
-                FillBookmarks(_doc.MainDocumentPart.RootElement, _bookmarks);
-            if (_deleteFields.Any())
-                DeleteFields(_doc.MainDocumentPart.RootElement, _deleteFields);
-                     
+                FillBookmarks();
+            
             foreach (var table in _tables)
             {
                 FillTables(table.Rows);
             }
 
+            if (_deleteFields.Any())
+                DeleteFields();
+
             if (_pargraphsToDelete > 0)
-                DeleteLastParagraphCore(_doc.MainDocumentPart.RootElement);
+                DeleteLastParagraphCore();
 
             _doc.Dispose();
         }
 
-        private void DeleteLastParagraphCore(OpenXmlElement root)
+        private void DeleteLastParagraphCore()
         {
-            for (int i = 0; i < _pargraphsToDelete; i++)
+            for (var i = 0; i < _pargraphsToDelete; i++)
             {
-                var paragraph = root.Descendants<Paragraph>().Last();
+                var paragraph = _root.Descendants<Paragraph>().Last();
                 paragraph.Remove();
             }
         }
 
-        private void DeleteFields(OpenXmlElement root, IEnumerable<string> deleteFields)
+        private void DeleteFields()
         {
-            foreach (var item in deleteFields)
+            foreach (var item in _deleteFields)
             {
-                var bookmark = root.Descendants<BookmarkStart>().FirstOrDefault(x => x.Name == item);
+                var bookmark = _root.Descendants<BookmarkStart>().FirstOrDefault(x => x.Name == item);
+
                 if (bookmark == null)
                     continue;
+
                 var paragraph = bookmark.Parent;
                 paragraph.Remove();
             }
         }
 
-        private static void FillTables(List<Dictionary<string, string>> list)
+        private void FillTables(List<Dictionary<string, string>> list)
         {
             var firstRow = list.FirstOrDefault();
+
             if (firstRow == null)
                 return;
+
             var firstBookmark = firstRow.FirstOrDefault();
             var row = GetRow(firstBookmark.Key);
+
             if (row == null)
                 return;
+
             var table = row.Parent;
 
             foreach (var bookmarks in list)
             {
                 var newRow = (TableRow)row.Clone();
+
                 FillBookmarks(newRow, bookmarks);
                 table.AppendChild(newRow);
             }
+
             row.Remove();
         }
 
-        private static TableRow GetRow(string key)
+        private TableRow GetRow(string key)
         {
             var tableKey =
-               _doc.MainDocumentPart.RootElement.Descendants<BookmarkStart>().FirstOrDefault(x => x.Name == key);
+               _root.Descendants<BookmarkStart>().FirstOrDefault(x => x.Name == key);
+
             if (tableKey == null)
                 return null;
+
             var paragraph = tableKey.Parent;
             var cell = paragraph.Parent;
+
             return (TableRow)cell.Parent;
         }
 
-        private static void FillBookmarks(OpenXmlElement root, Dictionary<string, string> bookmarks)
+        private void FillBookmarks()
+        {
+            FillBookmarks(_root, _bookmarks);
+        }
+
+        private void FillBookmarks(OpenXmlElement root, Dictionary<string, string> bookmarks)
         {
             var sb = new StringBuilder();
+
             foreach (var itemBookmark in bookmarks)
             {
                 var start = root.Descendants<BookmarkStart>().FirstOrDefault(x => x.Name == itemBookmark.Key);
+                
                 if (start == null)
                     continue;
+
                 var elem = start.NextSibling();
                 var run = elem as Run;
+
                 while (elem != null && !(elem is BookmarkEnd))
                 {
                     var nextElem = elem.NextSibling();
+
                     elem.Remove();
                     elem = nextElem;
                 }
+
                 if (run != null)
                     run.GetFirstChild<Text>().Text = itemBookmark.Value;
                 else
@@ -269,8 +298,10 @@ namespace LexTalionis.DocXTools
         public void DelTableRow(string key)
         {
             var row = GetRow(key);
+
             if (row == null)
                 return;
+
             row.Remove();
         }
         /// <summary>
@@ -281,6 +312,7 @@ namespace LexTalionis.DocXTools
         {
             var row = GetRow(key);
             var table = row.Parent;
+
             table.Remove();
         }
 
@@ -293,9 +325,11 @@ namespace LexTalionis.DocXTools
         {
             var source = new List<Source>();
             var i = 0;
+
             foreach (var item in reports)
             {
                 ++i;
+
                 using (item)
                 {
                     var buffer = new byte[item.Length];
@@ -305,6 +339,7 @@ namespace LexTalionis.DocXTools
             }
             var tmp = Path.GetTempFileName();
             var mergedDoc = DocumentBuilder.BuildDocument(source);
+
             mergedDoc.SaveAs(tmp);
 
             return File.OpenRead(tmp);
