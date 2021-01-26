@@ -53,7 +53,7 @@ namespace LexTalionis.DocXTools
             _doc = WordprocessingDocument.Open(stream, true);
             _root = _doc.MainDocumentPart.RootElement;
            
-            return new Word();;
+            return new Word();
         }
 
         /// <summary>
