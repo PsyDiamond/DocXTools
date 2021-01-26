@@ -31,7 +31,12 @@ namespace LexTalionis.DocXTools
         /// </summary>
         readonly List<Table> _tables = new List<Table>();
 
-        private readonly List<string> _deleteFields = new List<string>(); 
+        private readonly List<string> _deleteFields = new List<string>();
+
+        /// <summary>
+        /// Число удаляемых параграфов
+        /// </summary>
+        private int _pargraphsToDelete;
        
         /// <summary>
         /// Открыть шаблон
@@ -102,6 +107,24 @@ namespace LexTalionis.DocXTools
         }
 
         /// <summary>
+        /// Удалить последний параграф
+        /// </summary>
+        public void DeleteLastParagraph()
+        {
+            _pargraphsToDelete++;
+        }
+
+        /// <summary>
+        /// Удалить последние параграфы
+        /// </summary>
+        /// <param name="count">число параграфов</param>
+        public void DeleteLastParagraphs(int count)
+        {
+            if (count > 0)
+                _pargraphsToDelete += count;
+        }
+
+        /// <summary>
         /// Добавить строку закладок в таблицу
         /// </summary>
         /// <param name="row">строка закладок</param>
@@ -147,12 +170,25 @@ namespace LexTalionis.DocXTools
                 FillBookmarks(_doc.MainDocumentPart.RootElement, _bookmarks);
             if (_deleteFields.Any())
                 DeleteFields(_doc.MainDocumentPart.RootElement, _deleteFields);
+                     
+            foreach (var table in _tables)
+            {
+                FillTables(table.Rows);
+            }
 
-                foreach (var table in _tables)
-                {
-                    FillTables(table.Rows);
-                }
+            if (_pargraphsToDelete > 0)
+                DeleteLastParagraphCore(_doc.MainDocumentPart.RootElement);
+
             _doc.Dispose();
+        }
+
+        private void DeleteLastParagraphCore(OpenXmlElement root)
+        {
+            for (int i = 0; i < _pargraphsToDelete; i++)
+            {
+                var paragraph = root.Descendants<Paragraph>().Last();
+                paragraph.Remove();
+            }
         }
 
         private void DeleteFields(OpenXmlElement root, IEnumerable<string> deleteFields)
