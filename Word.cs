@@ -63,7 +63,10 @@ namespace LexTalionis.DocXTools
         /// <returns>шаблон</returns>
         public static Word Open(string filename)
         {
-            return Open(File.Open(filename, FileMode.Open, FileAccess.ReadWrite));
+            _doc = WordprocessingDocument.Open(filename, true);
+            _root = _doc.MainDocumentPart.RootElement;
+
+            return new Word();
         }
 
         /// <summary>
@@ -152,6 +155,16 @@ namespace LexTalionis.DocXTools
         /// <summary>
         /// Добавить строки в таблицу
         /// </summary>
+        /// <param name="table">таблица</param>
+        /// <param name="id">идентификатор таблицы (для возможности добавлять строки в несколько таблиц)</param>
+        public void AddTableRow(ReportTable table, byte id)
+        {
+            AddTableRow((List<Dictionary<string, string>>)table, id);
+        }
+
+        /// <summary>
+        /// Добавить строки в таблицу
+        /// </summary>
         /// <param name="table">коллекция строк закладок</param>
         /// <param name="id">идентификатор таблицы (для возможности добавлять строки в несколько таблиц)</param>
         public void AddTableRow(List<Dictionary<string, string>> table, byte id)
@@ -211,7 +224,7 @@ namespace LexTalionis.DocXTools
                 paragraph.Remove();
             }
         }
-
+        
         private void FillTables(List<Dictionary<string, string>> list)
         {
             var firstRow = list.FirstOrDefault();
