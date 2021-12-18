@@ -324,6 +324,8 @@ namespace LexTalionis.DocXTools
         public void DelTable(string key)
         {
             var row = GetRow(key);
+            if (row == null) 
+                return;
             var table = row.Parent;
 
             table.Remove();
